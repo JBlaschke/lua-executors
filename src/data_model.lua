@@ -106,27 +106,173 @@ end
 
 M.Call = {}
 
-function M.Call:Create(mod)
+function M.Call:Create(mod, tbl)
 
-    local t = {};
+    local t = {}
     t._t = {
-        input = nil,
-        stdout = nil,
-        stderr = nil,
-        exitcode = nil,
-        signal = nil
+        input = {},
+        stdout = {},
+        stderr = {},
+        exitcode = {},
+        signal = {}
     }
 
     local mt = getmetatable(mod)
-    if mt == nil then
-        mt = {
-            __index = function(self, k, ...)
-                return M[k]
-            end,
-            __tostring = tostring,
-            __concat = concat
-        }
+    if mt == nil then mt = {} end
+
+    --
+    -- Upated index function, which inherits __index from `mod` execpt for keys
+    -- in `t._t`. Valid keys to `t._t` need to be prefixed by `__`, and take
+    -- precident over keys from `tbl` and `mod`.
+    --
+    ---@diagnostic disable-next-line: unused-local, redefined-local
+    mt.__index = function(self, k)
+        --
+        -- check if the index is `__{key}` where key is a valid key to `t._t`. 
+        -- If `key` does exist in `t._t` then use `key` to index into `t._t`.
+        -- If it does not exist in`t._t`, then default to indexing into `tbl`
+        -- first, then followd by `mod`.
+        --
+
+        -- allow direct indexing of `t._t`:
+        if k == "_t" then return t._t end
+
+        -- try `t._t` (prefixing `__`)
+        if string.len(k) > 2 then
+            if k:sub(1, 2) == "__" then
+                local key = k:sub(3, #k)
+                if nil ~= t._t[key] then return t._t[key] end
+            end
+        end
+
+        -- next try `tbl`
+        if nil ~= tbl[k] then return tbl[k] end
+
+        -- finally default to `mod`
+        return mod[k]
     end
+
+    --
+    -- Upated newindex function, which inherits __newindex from `tbl` execpt for
+    -- keys in `t._t`. Valid keys to `t._t` need to be prefixed by `__`, and
+    -- take precident over keys from `tbl`. `mod` will not be modified directly.
+    --
+    ---@diagnostic disable-next-line: unused-local, redefined-local
+    mt.__newindex = function(self, k, v)
+        --
+        -- check if the index is `__{key}` where key is a valid key to `t._t`. 
+        -- If `key` does exist in `t._t` then use `key` to index into `t._t`.
+        -- If it does not exist in`t._t`, then default to indexing into `tbl`.
+        --
+
+        -- don't allow setting `t._t` directly
+
+        -- try `t._t` (prefixing `__`)
+        if string.len(k) > 2 then
+            if k:sub(1, 2) == "__" then
+                local key = k:sub(3, #k)
+                if nil ~= t._t[key] then t._t[key] = v end
+            end
+        end
+
+        -- default to `tbl`
+        tbl[k] = v
+    end
+
+
+    local __next = function(self, k)
+        if nil == k then
+            return next(t._t, nil)
+        end
+        -- try `t._t` (prefixing `__`)
+        if string.len(k) > 2 then
+            if k:sub(1, 2) == "__" then
+                local key = k:sub(3, #k)
+                if nil ~= t._t[key] then return next(t._t, key) end
+            end
+        end
+        if nil ~= tbl[k] then return next(tbl, k) end
+    end
+
+
+    ---@diagnostic disable-next-line: redefined-local
+    mt.__pairs = function(self)
+        -- iterator state: start iterating over `t._t` (0) then `tbl` (1)
+        local state = 0
+
+        -- iterator function takes the table and an index and returns the next
+        -- index and associated value or nil to end iteration
+        ---@diagnostic disable-next-line: redefined-local
+        local function stateless_iter(self, k)
+            local v
+            if 0 == state then
+                print(k)
+                k, v = __next(t._t, k)
+                if nil ~= v then
+                    return "__" .. k, v
+                else
+                    state = 1
+                    return stateless_iter(self, k)
+                end
+            elseif 1 == state then
+                k, v = next(tbl, k)
+                if nil ~= v then
+                    return k, v
+                else
+                    state = 2
+                    return stateless_iter(self, k)
+                end
+            else
+                return nil
+            end
+        end
+
+        -- Return an iterator function, the table, starting point
+        return stateless_iter, self, nil
+    end
+
+
+    ---@diagnostic disable-next-line: redefined-local
+    mt.__ipairs = function(self)
+        -- iterator state: start iterating over `t._t` (0) then `tbl` (1)
+        local state = 0
+        local offset = 0
+
+        -- iterator function takes the table and an index and returns the next
+        -- index and associated value or nil to end iteration
+        ---@diagnostic disable-next-line: redefined-local
+        local function stateless_iter(self, i)
+            local v
+            if 0 == state then
+                i = i + 1
+                v = self._t[i]
+                if nil ~= v then
+                    return i, v
+                else
+                    offset = i
+                    state = 1
+                    return stateless_iter(self, i)
+                end
+            elseif 1 == state then
+                i = i + 1 - offset
+                v = tbl[i]
+                if nil ~= v then
+                    return i, v
+                else
+                    state = 2
+                    return stateless_iter(self, i)
+                end
+            else
+                return nil
+            end
+        end
+
+        -- Return an iterator function, the table, starting point
+        return stateless_iter, self, 0
+    end
+
+    -- mt.__tostring = tostring
+    -- mt.__concat = concat
     return setmetatable(t, mt)
 end
 
