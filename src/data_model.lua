@@ -106,15 +106,15 @@ end
 
 M.Call = {}
 
-function M.Call:Create(mod, tbl)
+function M.Call:new(mod, tbl)
 
     local t = {}
     t._t = {
-        input = {},
-        stdout = {},
-        stderr = {},
-        exitcode = {},
-        signal = {}
+        input = "",
+        stdout = "",
+        stderr = "",
+        exitcode = -1,
+        signal = -1
     }
 
     local mt = getmetatable(mod)
@@ -134,6 +134,9 @@ function M.Call:Create(mod, tbl)
         -- first, then followd by `mod`.
         --
 
+        -- allow for class methods
+        if rawget(M.Call, k) ~= nil then return rawget(M.Call, k) end
+
         -- allow direct indexing of `t._t`:
         if k == "_t" then return t._t end
 
@@ -141,7 +144,7 @@ function M.Call:Create(mod, tbl)
         if string.len(k) > 2 then
             if k:sub(1, 2) == "__" then
                 local key = k:sub(3, #k)
-                if nil ~= t._t[key] then return t._t[key] end
+                if nil ~= self._t[key] then return self._t[key] end
             end
         end
 
@@ -171,29 +174,16 @@ function M.Call:Create(mod, tbl)
         if string.len(k) > 2 then
             if k:sub(1, 2) == "__" then
                 local key = k:sub(3, #k)
-                if nil ~= t._t[key] then t._t[key] = v end
+                if nil ~= self._t[key] then
+                    self._t[key] = v
+                    return
+                end
             end
         end
 
         -- default to `tbl`
         tbl[k] = v
     end
-
-
-    local __next = function(self, k)
-        if nil == k then
-            return next(t._t, nil)
-        end
-        -- try `t._t` (prefixing `__`)
-        if string.len(k) > 2 then
-            if k:sub(1, 2) == "__" then
-                local key = k:sub(3, #k)
-                if nil ~= t._t[key] then return next(t._t, key) end
-            end
-        end
-        if nil ~= tbl[k] then return next(tbl, k) end
-    end
-
 
     ---@diagnostic disable-next-line: redefined-local
     mt.__pairs = function(self)
@@ -206,8 +196,7 @@ function M.Call:Create(mod, tbl)
         local function stateless_iter(self, k)
             local v
             if 0 == state then
-                print(k)
-                k, v = __next(t._t, k)
+                k, v = self:__next(tbl, k)
                 if nil ~= v then
                     return "__" .. k, v
                 else
@@ -250,11 +239,12 @@ function M.Call:Create(mod, tbl)
                     return i, v
                 else
                     offset = i
+                    i = 0
                     state = 1
                     return stateless_iter(self, i)
                 end
             elseif 1 == state then
-                i = i + 1 - offset
+                i = i + 1
                 v = tbl[i]
                 if nil ~= v then
                     return i, v
@@ -274,6 +264,25 @@ function M.Call:Create(mod, tbl)
     -- mt.__tostring = tostring
     -- mt.__concat = concat
     return setmetatable(t, mt)
+end
+
+
+function M.Call:__next(tbl, k)
+    -- initiate iteration
+    if nil == k then
+        return next(self._t, nil)
+    end
+
+    -- try `t._t` (prefixing `__`)
+    if string.len(k) > 2 then
+        if k:sub(1, 2) == "__" then
+            local key = k:sub(3, #k)
+            if nil ~= self._t[key] then return next(self._t, key) end
+        end
+    end
+
+    -- try tbl
+    if nil ~= tbl[k] then return next(tbl, k) end
 end
 
 return M
