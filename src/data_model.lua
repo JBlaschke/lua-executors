@@ -231,7 +231,6 @@ function M.Call:new(mod, tbl)
                 if nil ~= v then
                     return i, v
                 else
-                    offset = i
                     i = 0
                     state = 1
                     return stateless_iter(sl_iter, i)
