@@ -125,8 +125,7 @@ function M.Call:new(mod, tbl)
     -- in `t._t`. Valid keys to `t._t` need to be prefixed by `__`, and take
     -- precident over keys from `tbl` and `mod`.
     --
-    ---@diagnostic disable-next-line: unused-local, redefined-local
-    mt.__index = function(self, k)
+    mt.__index = function(obj, k)
         --
         -- check if the index is `__{key}` where key is a valid key to `t._t`. 
         -- If `key` does exist in `t._t` then use `key` to index into `t._t`.
@@ -144,7 +143,7 @@ function M.Call:new(mod, tbl)
         if string.len(k) > 2 then
             if k:sub(1, 2) == "__" then
                 local key = k:sub(3, #k)
-                if nil ~= self._t[key] then return self._t[key] end
+                if nil ~= obj._t[key] then return obj._t[key] end
             end
         end
 
@@ -160,8 +159,7 @@ function M.Call:new(mod, tbl)
     -- keys in `t._t`. Valid keys to `t._t` need to be prefixed by `__`, and
     -- take precident over keys from `tbl`. `mod` will not be modified directly.
     --
-    ---@diagnostic disable-next-line: unused-local, redefined-local
-    mt.__newindex = function(self, k, v)
+    mt.__newindex = function(obj, k, v)
         --
         -- check if the index is `__{key}` where key is a valid key to `t._t`. 
         -- If `key` does exist in `t._t` then use `key` to index into `t._t`.
@@ -174,8 +172,8 @@ function M.Call:new(mod, tbl)
         if string.len(k) > 2 then
             if k:sub(1, 2) == "__" then
                 local key = k:sub(3, #k)
-                if nil ~= self._t[key] then
-                    self._t[key] = v
+                if nil ~= obj._t[key] then
+                    obj._t[key] = v
                     return
                 end
             end
@@ -185,23 +183,21 @@ function M.Call:new(mod, tbl)
         tbl[k] = v
     end
 
-    ---@diagnostic disable-next-line: redefined-local
-    mt.__pairs = function(self)
+    mt.__pairs = function(iter)
         -- iterator state: start iterating over `t._t` (0) then `tbl` (1)
         local state = 0
 
         -- iterator function takes the table and an index and returns the next
         -- index and associated value or nil to end iteration
-        ---@diagnostic disable-next-line: redefined-local
-        local function stateless_iter(self, k)
+        local function stateless_iter(sl_iter, k)
             local v
             if 0 == state then
-                k, v = self:__next(tbl, k)
+                k, v = sl_iter:__next(tbl, k)
                 if nil ~= v then
                     return "__" .. k, v
                 else
                     state = 1
-                    return stateless_iter(self, k)
+                    return stateless_iter(sl_iter, k)
                 end
             elseif 1 == state then
                 k, v = next(tbl, k)
@@ -209,7 +205,7 @@ function M.Call:new(mod, tbl)
                     return k, v
                 else
                     state = 2
-                    return stateless_iter(self, k)
+                    return stateless_iter(sl_iter, k)
                 end
             else
                 return nil
@@ -217,31 +213,28 @@ function M.Call:new(mod, tbl)
         end
 
         -- Return an iterator function, the table, starting point
-        return stateless_iter, self, nil
+        return stateless_iter, iter, nil
     end
 
 
-    ---@diagnostic disable-next-line: redefined-local
-    mt.__ipairs = function(self)
+    mt.__ipairs = function(iter)
         -- iterator state: start iterating over `t._t` (0) then `tbl` (1)
         local state = 0
-        local offset = 0
 
         -- iterator function takes the table and an index and returns the next
         -- index and associated value or nil to end iteration
-        ---@diagnostic disable-next-line: redefined-local
-        local function stateless_iter(self, i)
+        local function stateless_iter(sl_iter, i)
             local v
             if 0 == state then
                 i = i + 1
-                v = self._t[i]
+                v = sl_iter._t[i]
                 if nil ~= v then
                     return i, v
                 else
                     offset = i
                     i = 0
                     state = 1
-                    return stateless_iter(self, i)
+                    return stateless_iter(sl_iter, i)
                 end
             elseif 1 == state then
                 i = i + 1
@@ -250,7 +243,7 @@ function M.Call:new(mod, tbl)
                     return i, v
                 else
                     state = 2
-                    return stateless_iter(self, i)
+                    return stateless_iter(sl_iter, i)
                 end
             else
                 return nil
@@ -258,7 +251,7 @@ function M.Call:new(mod, tbl)
         end
 
         -- Return an iterator function, the table, starting point
-        return stateless_iter, self, 0
+        return stateless_iter, iter, 0
     end
 
     -- mt.__tostring = tostring
