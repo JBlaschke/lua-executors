@@ -183,6 +183,9 @@ function M.Call:new(mod, tbl)
         tbl[k] = v
     end
 
+    --
+    -- Updated pairs iterator, which starts with `_t` and then moves onto `tbl`
+    --
     mt.__pairs = function(iter)
         -- iterator state: start iterating over `t._t` (0) then `tbl` (1)
         local state = 0
@@ -216,7 +219,9 @@ function M.Call:new(mod, tbl)
         return stateless_iter, iter, nil
     end
 
-
+    --
+    -- Updated ipairs iterator, which starts with `_t` and then moves onto `tbl`
+    --
     mt.__ipairs = function(iter)
         -- iterator state: start iterating over `t._t` (0) then `tbl` (1)
         local state = 0
