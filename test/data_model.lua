@@ -25,7 +25,8 @@ end
 assert(nil == next(arg_target))
 
 local t_target = {
-    input="input", stdout="stdout", stderr="stderr", signal=1, exitcode=2
+    input="input", stdout="stdout", stderr="stderr", signal=1, exitcode=2,
+    previous = x.__previous
 }
 -- check t._t
 for k, v in pairs(x._t) do
@@ -41,7 +42,7 @@ print("Testing Call's pairs iterator:")
 
 local x_target = {
     __input="input", __stdout="stdout", __stderr="stderr", __signal=1,
-    __exitcode=2, [1]="1", a=1, b="b"
+    __exitcode=2, __previous=x.__previous, [1]="1", a=1, b="b"
 }
 -- check the custom pairs iterator for Call
 for k, v in pairs(x) do

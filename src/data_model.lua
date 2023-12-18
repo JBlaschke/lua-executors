@@ -114,7 +114,8 @@ function M.Call:new(mod, tbl)
         stdout = "",
         stderr = "",
         exitcode = -1,
-        signal = -1
+        signal = -1,
+        previous = {}
     }
 
     local mt = getmetatable(mod)
