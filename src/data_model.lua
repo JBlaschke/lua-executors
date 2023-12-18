@@ -195,15 +195,15 @@ function M.Call:new(mod, tbl)
         local function stateless_iter(sl_iter, k)
             local v
             if 0 == state then
-                k, v = sl_iter:__next(tbl, k)
+                k, v = sl_iter:__next(tbl, k, state)
                 if nil ~= v then
-                    return "__" .. k, v
+                    return k, v
                 else
                     state = 1
                     return stateless_iter(sl_iter, k)
                 end
             elseif 1 == state then
-                k, v = next(tbl, k)
+                k, v = sl_iter:__next(tbl, k, state)
                 if nil ~= v then
                     return k, v
                 else
@@ -263,18 +263,33 @@ function M.Call:new(mod, tbl)
     return setmetatable(t, mt)
 end
 
-
-function M.Call:__next(tbl, k)
-    -- initiate iteration
-    if nil == k then
-        return next(self._t, nil)
+--
+-- Iterate which iterates over `_t` if and only if `state == 0`. When iterating
+-- over `_t` it prefixes `__` to the keys.
+--
+function M.Call:__next(tbl, k, state)
+    state = state or 0
+    -- initiate iteration based `state`
+    if nil == k and 0 == state then
+        local nk, nv = next(self._t, nil)
+        if nil ~= nv then
+            return "__" .. nk, nv
+        end
+        return
+    elseif nil == k then
+        return next(tbl, nil)
     end
 
     -- try `t._t` (prefixing `__`)
     if string.len(k) > 2 then
         if k:sub(1, 2) == "__" then
             local key = k:sub(3, #k)
-            if nil ~= self._t[key] then return next(self._t, key) end
+            if nil ~= self._t[key] then
+                local nk, nv = next(self._t, key)
+                if nil ~= nv then
+                    return "__" .. nk, nv
+                end
+            end
         end
     end
 
