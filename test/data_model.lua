@@ -14,6 +14,10 @@ x.__exitcode = 2
 x.b = "b"
 x[1] = "1"
 
+print("_______________________________________________________________________")
+print("Checking the contents of `args`:")
+print("-----------------------------------------------------------------------")
+
 local arg_target = {a=1, b="b", [1]="1"}
 -- check arg
 for k, v in pairs(args) do
@@ -23,6 +27,11 @@ for k, v in pairs(args) do
 end
 -- enure that arg isn't missing anything
 assert(nil == next(arg_target))
+print("")
+
+print("_______________________________________________________________________")
+print("Checking the contents of `_t`:")
+print("-----------------------------------------------------------------------")
 
 local t_target = {
     input="input", stdout="stdout", stderr="stderr", signal=1, exitcode=2,
@@ -36,9 +45,11 @@ for k, v in pairs(x._t) do
 end
 -- ensure that t._t isn't missing anything
 assert(nil == next(t_target))
+print("")
 
-
+print("_______________________________________________________________________")
 print("Testing Call's pairs iterator:")
+print("-----------------------------------------------------------------------")
 
 local x_target = {
     __input="input", __stdout="stdout", __stderr="stderr", __signal=1,
@@ -52,8 +63,11 @@ for k, v in pairs(x) do
 end
 -- ensure that x isn't missing anything
 assert(nil == next(x_target))
+print("")
 
+print("_______________________________________________________________________")
 print("Testing Call's ipairs iterator:")
+print("-----------------------------------------------------------------------")
 
 local x_i_target = {[1]="1"}
 -- check x[<index>]
@@ -64,5 +78,8 @@ for i, v in ipairs(x) do
 end
 --ensure that x[i] isn't missing anything
 assert(nil == next(x_i_target))
+print("")
 
+print("_______________________________________________________________________")
 print("ALL TESTS PASSED SUCCESSFULLY")
+print("-----------------------------------------------------------------------")
