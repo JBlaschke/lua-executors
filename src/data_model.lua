@@ -106,10 +106,11 @@ end
 
 M.Call = {}
 
-function M.Call:new(mod, tbl)
+function M.Call:new(cmd, mod, tbl)
 
     local t = {}
     t._t = {
+        command = cmd,
         input = "",
         stdout = "",
         stderr = "",

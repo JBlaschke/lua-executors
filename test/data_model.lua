@@ -4,7 +4,7 @@ local dm = require "data_model"
 local q = {}
 local args = {a=1}
 
-local x = dm.Call:new(q, args)
+local x = dm.Call:new("cmd", q, args)
 
 x.__input = "input"
 x.__stdout = "stdout"
@@ -35,7 +35,7 @@ print("-----------------------------------------------------------------------")
 
 local t_target = {
     input="input", stdout="stdout", stderr="stderr", signal=1, exitcode=2,
-    previous = x.__previous
+    command="cmd", previous = x.__previous
 }
 -- check t._t
 for k, v in pairs(x._t) do
@@ -53,7 +53,7 @@ print("-----------------------------------------------------------------------")
 
 local x_target = {
     __input="input", __stdout="stdout", __stderr="stderr", __signal=1,
-    __exitcode=2, __previous=x.__previous, [1]="1", a=1, b="b"
+    __exitcode=2, __command="cmd", __previous=x.__previous, [1]="1", a=1, b="b"
 }
 -- check the custom pairs iterator for Call
 for k, v in pairs(x) do
