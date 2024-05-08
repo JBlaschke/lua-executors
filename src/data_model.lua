@@ -40,6 +40,7 @@ function M.flatten(t)
             end
         end
         for k, v in pairs(t) do
+            -- print(k)
             if k == "__input" then
                 result.input = result.input .. v
             elseif k == "__stdout" then
@@ -73,7 +74,7 @@ local function strip(str)
 end
 
 
-local function tostring(self)
+function M.tostring(self)
     -- return trimmed command output as a string
     local out = strip(self.__stdout)
     local err = strip(self.__stderr)
@@ -89,7 +90,7 @@ end
 -- the concatenation (..) operator must be overloaded so you don't have to keep
 -- calling `tostring`
 --
-local function concat(self, rhs)
+function M.concat(self, rhs)
     local out, err = self, ""
     if type(out) ~= "string" then
         out, err = strip(self.__stdout), strip(self.__stderr)
@@ -258,6 +259,10 @@ function M.Call:new(cmd, mod, tbl)
 
         -- Return an iterator function, the table, starting point
         return stateless_iter, iter, 0
+    end
+
+    mt.__len = function(iter)
+        return #iter._t + #tbl
     end
 
     -- mt.__tostring = tostring

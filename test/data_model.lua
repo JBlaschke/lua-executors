@@ -2,7 +2,7 @@ local dm = require "data_model"
 
 
 local q = {}
-local args = {a=1}
+local args = {a=1, c=true}
 
 local x = dm.Call:new("cmd", q, args)
 
@@ -18,7 +18,7 @@ print("_______________________________________________________________________")
 print("Checking the contents of `args`:")
 print("-----------------------------------------------------------------------")
 
-local arg_target = {a=1, b="b", [1]="1"}
+local arg_target = {a=1, b="b", c=true, [1]="1"}
 -- check arg
 for k, v in pairs(args) do
     print("Checking: args[" .. k .. "] = " .. tostring(v))
@@ -53,7 +53,8 @@ print("-----------------------------------------------------------------------")
 
 local x_target = {
     __input="input", __stdout="stdout", __stderr="stderr", __signal=1,
-    __exitcode=2, __command="cmd", __previous=x.__previous, [1]="1", a=1, b="b"
+    __exitcode=2, __command="cmd", __previous=x.__previous, [1]="1", a=1, b="b",
+    c=true
 }
 -- check the custom pairs iterator for Call
 for k, v in pairs(x) do
@@ -83,3 +84,14 @@ print("")
 print("_______________________________________________________________________")
 print("ALL TESTS PASSED SUCCESSFULLY")
 print("-----------------------------------------------------------------------")
+
+for k, v in pairs(dm.flatten(x)) do
+    print(k, v)
+    if "args" == k then
+        for k1, v1  in pairs(v) do
+            print("    ", k1, v1)
+        end
+    end
+end
+
+print(dm.tostring(x))
